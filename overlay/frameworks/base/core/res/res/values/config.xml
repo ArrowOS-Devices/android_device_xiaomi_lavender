@@ -576,4 +576,7 @@
     <!-- Component name for default assistant on this device -->
     <string name="config_defaultAssistantComponentName">com.google.android.googlequicksearchbox/com.google.android.voiceinteraction.GsaVoiceInteractionService</string>
 
+    <!-- reference volume index for music stream to limit headphone volume and display warning -->
+    <integer name="config_safe_media_volume_index">8</integer>
+
 </resources>
