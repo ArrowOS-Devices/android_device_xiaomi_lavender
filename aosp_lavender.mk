@@ -40,3 +40,6 @@ PRODUCT_BUILD_PROP_OVERRIDES += \
     PRIVATE_BUILD_DESC="lavender-user 9 PKQ1.180904.001 9.5.16 release-keys"
 
 TARGET_VENDOR := Xiaomi
+
+# Use Jelly
+TARGET_USE_JELLY := true
