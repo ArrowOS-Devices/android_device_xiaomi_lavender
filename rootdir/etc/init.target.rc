@@ -28,9 +28,6 @@
 #
 
 on early-init
-    mkdir /firmware 0771 system system
-    mkdir /bt_firmware 0771 system system
-    mkdir /dsp 0771 media media
 
 on init
     write /dev/stune/foreground/schedtune.sched_boost_no_override 1
@@ -48,17 +45,14 @@ on fs
     swapon_all /vendor/etc/fstab.qcom
     chown root system /mnt/vendor/persist
     chmod 0771 /mnt/vendor/persist
-    chmod 0771 /mnt/vendor/persist/spkr_calib_l.bin
     mkdir /mnt/vendor/persist/data 0700 system system
     mkdir /mnt/vendor/persist/bms 0700 root system
     restorecon_recursive /mnt/vendor/persist
     write /sys/kernel/boot_adsp/boot 1
+    chmod 0771 /mnt/vendor/persist/spkr_calib_l.bin
     chown system system /dev/goodix_fp
-    #chmod 0644 /dev/goodix_fp
-
     chmod 0664 /sys/class/thermal/thermal_message/sconfig
     chown system system /sys/class/thermal/thermal_message/sconfig
-
     chmod 0666 /sys/class/thermal/thermal_message/temp_state
     chown system system /sys/class/thermal/thermal_message/temp_state
 
@@ -66,7 +60,6 @@ on post-fs
     start vendor.qseecomd
     exec - system system -- /vendor/bin/init.qti.qseecomd.sh
     write /dev/ipa 1
-    insmod /vendor/lib/modules/exfat.ko
 
 on init
     write /sys/module/qpnp_rtc/parameters/poweron_alarm 1
@@ -81,19 +74,12 @@ on post-fs-data
 #end
     mkdir /data/misc/seemp 0700 system system
     mkdir /data/vendor/tloc 0700 system drmrpc
-#    start pa-cal-load
-   mkdir /data/vendor/mac_addr 0770 system wifi
-
-    mkdir /data/vendor/thermal 0771 root system
-    mkdir /data/vendor/thermal/config 0771 root system
-
-#Creat charger logg
-    mkdir /data/vendor/charge_logger 0771 system system
 
 on boot
     start rmt_storage
     start rfs_access
     write /dev/cpuset/top-app/cpus 0-7
+    write /dev/cpuset/audio-app/cpus 1-2
     write /dev/cpuset/foreground/cpus 0-6
     write /dev/cpuset/foreground/boost/cpus 0-6
     write /dev/cpuset/background/cpus 0-1
@@ -116,8 +102,6 @@ on boot
     chown system system /persist/speccfg/submask
     chown system system /persist/speccfg/partition
     chown root system /proc/tp_grip_area
-    #chmod 0771 /data/vendor/charge_logger
-    #chown root root /data/vendor/charge_logger
 
 #Create folder dump yuv images while debugging
     mkdir /data/vendor/camera 0770 camera camera
@@ -125,10 +109,6 @@ on boot
     # Double Tap to Wake
     chown system system /proc/tp_gesture
     chmod 0660 /proc/tp_gesture
-
-#Load WLAN driver
-   insmod /vendor/lib/modules/qca_cld3_wlan.ko
-   chown wifi wifi /sys/module/wlan/parameters/fwpath
 
 #USB controller configuration
     setprop vendor.usb.rndis.func.name "rndis_bam"
@@ -156,13 +136,7 @@ on property:init.svc.vendor.per_mgr=running
 
 on property:sys.shutdown.requested=*
     stop vendor.per_proxy
-
-on property:sys.thermallct.isincall=1
-    write /sys/class/power_supply/battery/device/thermalcall 1
-
-on property:sys.thermallct.isincall=0
-    write /sys/class/power_supply/battery/device/thermalcall 0
-
+    stop vendor.ims_rtp_daemon
 
 #start camera server as daemon
 #service qcamerasvr /system/bin/mm-qcamera-daemon
@@ -196,18 +170,6 @@ on property:sys.thermallct.isincall=0
 #on property:sys.boot_completed=1
 #    start qrngp
 #
-
-# add charge_logger service for dump charge message
-service charge_logger /vendor/bin/charge_logger
-   class last_start
-   user system
-   group system system wakelock
-   disabled
-   oneshot
-
-on property:sys.boot_completed=1
-    start charge_logger
-
 service vendor.qseecomd /vendor/bin/qseecomd
    class core
    user root
@@ -253,6 +215,7 @@ service adsprpcd /vendor/bin/adsprpcd audiopd
    class main
    user media
    group media
+
 #F7A has no hbtp feature
 #service hbtp /system/vendor/bin/hbtp_daemon
 #    class main
@@ -260,24 +223,20 @@ service adsprpcd /vendor/bin/adsprpcd audiopd
 #    group system
 #    disabled
 #end
+
 service vendor.mlipay-1-1 /vendor/bin/mlipayd@1.1
     class main
     user system
-    group system	
-	
-	
+    group system
+
 service vendor.mtdservice-1-2 /vendor/bin/mtd@1.2
     class main
     group system drmrpc
-
-	
-
 
 service fidoca /vendor/bin/fidoca
 	class main
 	user system
 	group system
-
 
 service audiod /system/vendor/bin/audiod
    class late_start
@@ -448,28 +407,6 @@ service cnss_diag /system/vendor/bin/cnss_diag -q -f -t HELIUM
    group system wifi inet sdcard_rw media_rw diag
    oneshot
 
-#Modify a way to collect wlan logs and default closed the logs in consumer
-service cnss_diag_system  /system/bin/cnss_diag_system -q -f -t HELIUM
-   class main
-   user system
-   group system wifi inet sdcard_rw media_rw diag
-   oneshot
-   disabled
-
-#Add for collect tcpdump to debug wifi access internet issue
-service vendor.tcpdump /system/xbin/tcpdump -i wlan0 -s 0 -vv -W 5 -C 20 -w /sdcard/wlan_logs/tcpdump.pcap
-    class main
-    user  root
-    group root wifi inet net_admin sdcard_rw media_rw diag
-    disabled
-    oneshot
-
-on property:sys.cnss_diag_system.log=1
-    start cnss_diag_system
-    start vendor.tcpdump
-on property:persist.cnss_diag_system.log=1
-    start cnss_diag_system
-
 service vendor.ims_rtp_daemon /system/vendor/bin/ims_rtp_daemon
    class main
    user system
@@ -512,11 +449,9 @@ on property:init.svc.zygote=restarting
 on charger
     load_system_props
     start qcom-post-boot
-    mkdir /data/vendor/charge_logger 0771 system system
     start vendor.hvdcp_opti
     setprop sys.usb.configfs 1
-    start power_off_alarm
-    start charge_logger
+    start vendor.power_off_alarm
 
 #
 #service nqs /system/bin/nqs
@@ -558,179 +493,6 @@ service smcinvoked /system/bin/smcinvoked
    user system
    group system
 
-# smart pa cal     tsx 08/26
-service pa-cal-load /system/vendor/bin/smart-pa-cal -load
-    user root
-    group root
-    disabled
-    oneshot
-
-# smart pa cal     tsx 08/26
-service smart-pa-cal /system/vendor/bin/smart-pa-cal -t 30 -c /system/vendor/etc/speaker.ftcfg -v -u
-    user root
-    group root
-    disabled
-    oneshot
-
-on property:sys.pa-cal=0
-    stop smart-pa-cal
-
-on property:sys.pa-cal=1
-    start smart-pa-cal
-
-# audio loopback test begin    tsx 08/26
-service loopback_spk1 /system/vendor/bin/loopback.sh 1 1
-    user root
-    group root
-    disabled
-    oneshot
-	
-service loopback_spk0 /system/vendor/bin/loopback.sh 1 0
-    user root
-    group root
-    disabled
-    oneshot
-	
-service loopback_rec1 /system/vendor/bin/loopback.sh 2 1
-    user root
-    group root
-    disabled
-    oneshot
-	
-service loopback_rec0 /system/vendor/bin/loopback.sh 2 0
-    user root
-    group root
-    disabled
-    oneshot
-	
-service loopback_hand1 /system/vendor/bin/loopback.sh 3 1
-    user root
-    group root
-    disabled
-    oneshot
-	
-service loopback_hand0 /system/vendor/bin/loopback.sh 3 0
-    user root
-    group root
-    disabled
-    oneshot
-	
-service loopback_sec1 /system/vendor/bin/loopback.sh 4 1
-    user root
-    group root
-    disabled
-    oneshot
-	
-service loopback_sec0 /system/vendor/bin/loopback.sh 4 0
-    user root
-    group root
-    disabled
-    oneshot
-
-service spk_playback1 /system/vendor/bin/loopback.sh 5 1
-    user root
-    group root
-    disabled
-    oneshot
-	
-service spk_playback0 /system/vendor/bin/loopback.sh 5 0
-    user root
-    group root
-    disabled
-    oneshot
-#mic1 to rec
-service loopback_mic12rec1 /system/vendor/bin/loopback.sh 11 1
-    user root
-    group root
-    disabled
-    oneshot
-
-service loopback_mic12rec0 /system/vendor/bin/loopback.sh 11 0
-    user root
-    group root
-    disabled
-    oneshot
-#mic2 to spk
-service loopback_mic22spk1 /system/vendor/bin/loopback.sh 12 1
-    user root
-    group root
-    disabled
-    oneshot
-
-service loopback_mic22spk0 /system/vendor/bin/loopback.sh 12 0
-    user root
-    group root
-    disabled
-    oneshot
-
-on property:sys.loopback-spk=1
-    start loopback_spk1
-	
-on property:sys.loopback-spk=0
-    start loopback_spk0
-	
-on property:sys.loopback-rec=1
-    start loopback_rec1
-	
-on property:sys.loopback-rec=0
-    start loopback_rec0
-	
-on property:sys.loopback-mic1=1
-    start loopback_hand1
-	
-on property:sys.loopback-mic1=0
-    start loopback_hand0
-	
-on property:sys.loopback-mic2=1
-    start loopback_sec1
-	
-on property:sys.loopback-mic2=0
-    start loopback_sec0
-
-on property:sys.spk-playback=1
-    start spk_playback1
-	
-on property:sys.spk-playback=0
-    start spk_playback0
-
-#mic1 to rec
-on property:sys.loopback-mic12rec=1
-    start loopback_mic12rec1
-
-on property:sys.loopback-mic12rec=0
-    start loopback_mic12rec0
-#mic2 to spk
-on property:sys.loopback-mic22spk=1
-    start loopback_mic22spk1
-
-on property:sys.loopback-mic22spk=0
-    start loopback_mic22spk0
-
-service tinyhostless_spk /system/bin/tinyhostless -D 0 -P 35 -C 11 -p 256 -n 2 -c 1 -r 48000
-    user root
-    group root
-    disabled
-    oneshot
-
-service tinyhostless /system/bin/tinyhostless -D 0 -P 5 -C 11 -p 256 -n 2 -c 1 -r 48000
-    user root
-    group root
-    disabled
-    oneshot
-
-on property:sys.tinyhostless=0
-    stop tinyhostless 
-
-on property:sys.tinyhostless=1
-    start tinyhostless
-
-on property:sys.tinyhostless-spk=0
-    stop tinyhostless_spk
-
-on property:sys.tinyhostless-spk=1
-    start tinyhostless_spk
-	
-#audio loopback test end
 on property:persist.sys.display_srgb=1
     write /sys/class/graphics/fb0/msm_fb_srgb 1
 
@@ -749,38 +511,29 @@ on property:persist.sys.display_cabc=1
 on property:persist.sys.display_cabc=2
     write /sys/class/graphics/fb0/msm_fb_cabc 2
 
-#on property:persist.sys.display_gamma=1
-#    write /sys/class/graphics/fb0/msm_fb_gamma 1
+on property:persist.sys.display_cabc_movie=1
+    write /sys/class/graphics/fb0/msm_fb_cabc_movie 1
 
-#on property:persist.sys.display_gamma=2
-#    write /sys/class/graphics/fb0/msm_fb_gamma 2
+on property:persist.sys.display_cabc_movie=2
+    write /sys/class/graphics/fb0/msm_fb_cabc_movie 2
 
-service adswitch /vendor/bin/adswitch
-    user root
-    group root
-    disabled
-    oneshot
+on property:persist.sys.display_cabc_still=1
+    write /sys/class/graphics/fb0/msm_fb_cabc_still 1
 
-service checknv /system/bin/checknv
-    class late_start
-    user root
-    oneshot
-    seclabel u:r:vendor_init:s0
+on property:persist.sys.display_cabc_still=2
+    write /sys/class/graphics/fb0/msm_fb_cabc_still 2
 
-service nv_mac /vendor/bin/nv_mac
-	class late_start
-	user system
-	group system inet net_raw wifi
-	oneshot
+on property:sys.hbm_mode=1
+    write /sys/class/graphics/fb0/msm_fb_hbm 1
 
-on property:sys.ad.enable=on
-    start adswitch
+on property:sys.hbm_mode=2
+    write /sys/class/graphics/fb0/msm_fb_hbm 2
 
-on property:sys.ad.enable=off
-    start adswitch
+on property:sys.hbm_mode=3
+    write /sys/class/graphics/fb0/msm_fb_hbm 3
 
-on property:sys.boot_completed=1
-	start nv_mac
+on property:sys.hbm_mode=0
+    write /sys/class/graphics/fb0/msm_fb_hbm 0
 
 on property:sys.dynamic_debug=1
    write /sys/kernel/debug/dynamic_debug/control "file q6afe.c +p" 
@@ -811,12 +564,15 @@ on property:sys.dynamic_debug=0
 #touch settings
 on property:vendor.tp.grip_area=90
     write /proc/tp_grip_area 90
+
 on property:vendor.tp.grip_area=270
     write /proc/tp_grip_area 270
+
 on property:vendor.tp.grip_area=0
     write /proc/tp_grip_area 0
+
 on property:vendor.tp.grip_area=1
     write /proc/tp_grip_area 1
+
 on property:vendor.tp.grip_area=180
     write /proc/tp_grip_area 180
-
