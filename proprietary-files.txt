@@ -190,6 +190,10 @@ vendor/lib64/vendor.qti.latency@2.0.so
 vendor/lib/hw/consumerir.default.so
 vendor/lib64/hw/consumerir.default.so
 
+# Display - hardware
+vendor/lib/libsdedrm.so
+vendor/lib64/libsdedrm.so
+
 # Display calibration
 vendor/etc/qdcm_calib_data_boe_td4320_fhdplus_video_mode_dsi_panel.xml
 vendor/etc/qdcm_calib_data_shenchao_nt36672a_fhdplus_video_mode_dsi_panel.xml
@@ -218,7 +222,6 @@ vendor/lib64/com.qualcomm.qti.dpm.api@1.0.so
 # DRM
 vendor/bin/qseecomd
 vendor/lib/libQSEEComAPI.so
-vendor/lib/libsdedrm.so
 vendor/lib64/libdrmfs.so
 vendor/lib64/libdrmtime.so
 vendor/lib64/libGPreqcancel_svc.so
@@ -226,7 +229,6 @@ vendor/lib64/libGPreqcancel.so
 vendor/lib64/libqisl.so
 vendor/lib64/libQSEEComAPI.so
 vendor/lib64/librpmb.so
-vendor/lib64/libsdedrm.so
 vendor/lib64/libsecureui_svcsock.so
 vendor/lib64/libsecureui.so
 vendor/lib64/libSecureUILib.so
@@ -234,10 +236,21 @@ vendor/lib64/libssd.so
 vendor/lib64/libStDrvInt.so
 vendor/lib64/libtzdrmgenprov.so
 
-# DRM
+# DRM - Widevine
 vendor/bin/hw/android.hardware.drm@1.1-service.widevine
 vendor/etc/init/android.hardware.drm@1.1-service.widevine.rc
+vendor/lib/mediadrm/libwvdrmengine.so
+vendor/lib/libbase64.so
+vendor/lib/libcpion.so
+vendor/lib/libcppf.so
+vendor/lib/libhdcpsrm.so
+vendor/lib64/mediadrm/libwvdrmengine.so
+vendor/lib64/libbase64.so
+vendor/lib64/libcpion.so
+vendor/lib64/libcppf.so
+vendor/lib64/libhdcpsrm.so
 vendor/lib64/libwvhidl.so
+vendor/lib64/liboemcrypto.so
 
 # ESE-Powermanager
 vendor/bin/hw/vendor.qti.esepowermanager@1.0-service
