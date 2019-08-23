@@ -1,0 +1,14 @@
+[
+ {
+  "repository": "android_vendor_xiaomi_lavender",
+  "target_path": "vendor/xiaomi/lavender"
+ },
+ {
+  "repository": "android_device_xiaomi_lavender",
+  "target_path": "device/xiaomi/lavender"
+ },
+ {
+  "repository": "android_kernel_xiaomi_lavender",
+  "target_path": "kernel/xiaomi/lavender"
+ }
+]
