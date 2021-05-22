@@ -31,6 +31,8 @@ PRODUCT_MANUFACTURER := Xiaomi
 PRODUCT_NAME := arrow_lavender
 PRODUCT_MODEL := Redmi Note 7
 
+DEVICE_MAINTAINER := Ratoriku, Hazama25
+
 PRODUCT_GMS_CLIENTID_BASE := android-xiaomi
 
 TARGET_VENDOR_PRODUCT_NAME := lavender
